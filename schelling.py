@@ -10,7 +10,7 @@
 from random import randint, choice, shuffle, uniform
 from math import floor, sqrt, ceil
 import matplotlib.pyplot as plt
-
+from copy import deepcopy
 from itertools import product
 # class Model:
 
@@ -124,7 +124,7 @@ class Agent:
         #     filter(lambda point: point not in used_points, all_points))
         # shuffle(valid_points)
         # print(valid_points)
-        self.location = uniform(0,1), uniform(0,1)
+        self.location = uniform(0, 1), uniform(0, 1)
 
     def get_distance(self, other):
         "Computes the euclidean distance between self and other agent."
@@ -173,7 +173,6 @@ class World:
             self.agents.append(
                 Agent(1, self.agents, self.n, num_neighbors, same_prop))
 
-
     def plot_distribution(self, cycle_num):
         "Plot the distribution of agents after cycle_num rounds of the loop."
         x_values_0, y_values_0 = [], []
@@ -217,8 +216,86 @@ class World:
         print('Converged, terminating.')
 
 
+def empty_idxs(lst):
+    return [i for i in range(len(lst)) if lst[i] == '_']
+
+
+def b_neighbors(idx, lst):
+    b_count = 0
+    if idx > 0 and lst[idx-1] == 'B':
+        b_count += 1
+    if idx < len(lst)-1 and lst[idx+1] == 'B':
+        b_count += 1
+    return b_count
+
+
+def total_neighbors(idx, lst):
+    n_count = 0
+    if idx > 0 and lst[idx-1] != '_':
+        n_count += 1
+    if idx < len(lst)-1 and lst[idx+1] != '_':
+        n_count += 1
+    return n_count
+
+
+def swap(idx: int, idy: int, lst: list):
+    """Swap in place the values at idx and idy
+
+    Args:
+        idx (int): first index
+        idy (int): second index
+        lst (list): the list
+    """
+    temp = lst[idx]
+    lst[idx] = lst[idy]
+    lst[idy] = temp
+
+
+def move(idx, members_lst):
+    if members_lst[idx] == 'A':
+        current_b = b_neighbors(idx, members_lst)
+        # print(current_b)
+        for e_idx in empty_idxs(members_lst):
+            # print(e_idx)
+            empty_b_count = b_neighbors(e_idx, members_lst)
+            # print(empty_b_count)
+            if empty_b_count < current_b:
+                swap(e_idx, idx, members_lst)
+                current_b = empty_b_count
+    if members_lst[idx] == 'B':
+        current_n = total_neighbors(idx, members_lst)
+        for e_idx in empty_idxs(members_lst):
+            empty_n_count = total_neighbors(e_idx, members_lst)
+            if empty_n_count > current_n:
+                swap(e_idx, idx, members_lst)
+                current_n = empty_n_count
+# def stable_alignment(members_lst: [str]) -> bool:
+#     for member in members_lst:
+
+
+def move_all(members_lst):
+    print(members_lst)
+    past_lst = deepcopy(members_lst)
+    for member_idx in range(len(members_lst)):
+        move(member_idx, members_lst)
+        print(members_lst)
+        past_lst = deepcopy(members_lst)
+
+
+def schelling(members_str):
+    runtime = 0
+    members = list(members_str)
+    old_lst = []
+    while old_lst != members:
+        old_lst = deepcopy(members)
+        move_all(members)
+        runtime += 1
+        if runtime > 100:
+            print("There may not be a stable arrangement")
+            break
+
 if __name__ == "__main__":
-    World(500, .5, .5, .7).loop()
+    schelling(['A', 'B', 'A', 'B', 'A', 'B', '', '', ''])
     # num_of_type_0 = 250
     # num_of_type_1 = 250
     # num_neighbors = 10      # Number of agents regarded as neighbors
