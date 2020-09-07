@@ -220,15 +220,6 @@ def empty_idxs(lst):
     return [i for i in range(len(lst)) if lst[i] == '_']
 
 
-def b_neighbors(idx, lst):
-    b_count = 0
-    if idx > 0 and lst[idx-1] == 'B':
-        b_count += 1
-    if idx < len(lst)-1 and lst[idx+1] == 'B':
-        b_count += 1
-    return b_count
-
-
 def total_neighbors(idx, lst):
     n_count = 0
     if idx > 0 and lst[idx-1] != '_':
@@ -236,6 +227,42 @@ def total_neighbors(idx, lst):
     if idx < len(lst)-1 and lst[idx+1] != '_':
         n_count += 1
     return n_count
+
+
+def group_count(idx: int, group_type: str, lst) -> int:
+    g_count = 0
+    if idx > 0 and lst[idx-1] == group_type:
+        g_count += 1
+    if idx < len(lst)-1 and lst[idx+1] == group_type:
+        g_count += 1
+    return g_count
+
+
+def dist_to_group(idx: int, group_type: str, lst):
+    """
+    A version of group_count that allows for sorting with solo agents
+    Sometimes entities don't have immediately adjacent neighbors. 
+    In that case, the value represents the distance to any neighbor, e.g
+    -1 means that an entity one to the left or right has a neighbor of that type.
+
+    Args:
+        idx (int):index in the list
+        group_type (str):group type we care about matching
+        lst ([type]): [description]
+    """
+    my_count = group_count(idx, group_count, lst)
+    if my_count > 0:
+        return my_count
+    adjacent_counts = []
+    l_neighbor_count = dist_to_group(idx-1, group_type, lst) if idx > 0 else None
+    r_neighbor_count = dist_to_group(idx+1, group_type, lst) if idx < len(lst)-1  else None
+    for neighbor_count in (l_neighbor_count, r_neighbor_count):
+        if neighbor_count != 0:
+            if neighbor_count < 0 and neighbor_count is not None: #The neighbor doesn't have any next directly to it either 
+                adjacent_counts.append(neighbor_count - 1)
+            else: #The neighbor does have one next to it!
+                adjacent_counts.append(neighbor_count) 
+    return max(adjacent_counts)
 
 
 def swap(idx: int, idy: int, lst: list):
@@ -251,35 +278,67 @@ def swap(idx: int, idy: int, lst: list):
     lst[idy] = temp
 
 
-def move(idx, members_lst):
-    if members_lst[idx] == 'A':
-        current_b = b_neighbors(idx, members_lst)
-        # print(current_b)
-        for e_idx in empty_idxs(members_lst):
-            # print(e_idx)
-            empty_b_count = b_neighbors(e_idx, members_lst)
-            # print(empty_b_count)
-            if empty_b_count < current_b:
-                swap(e_idx, idx, members_lst)
-                current_b = empty_b_count
-    if members_lst[idx] == 'B':
-        current_n = total_neighbors(idx, members_lst)
-        for e_idx in empty_idxs(members_lst):
-            empty_n_count = total_neighbors(e_idx, members_lst)
-            if empty_n_count > current_n:
-                swap(e_idx, idx, members_lst)
-                current_n = empty_n_count
+# def move(idx, members_lst):
+#     if members_lst[idx] == 'A':
+#         current_b = other_neighbor_count(idx, members_lst)
+#         # print(current_b)
+#         for e_idx in empty_idxs(members_lst):
+#             # print(e_idx)
+#             empty_b_count = other_neighbor_count(e_idx, members_lst)
+#             # print(empty_b_count)
+#             if empty_b_count < current_b:
+#                 swap(e_idx, idx, members_lst)
+#                 current_b = empty_b_count
+#     if members_lst[idx] == 'B':
+#         current_n = total_neighbors(idx, members_lst)
+#         for e_idx in empty_idxs(members_lst):
+#             empty_n_count = total_neighbors(e_idx, members_lst)
+#             if empty_n_count > current_n:
+#                 swap(e_idx, idx, members_lst)
+#                 current_n = empty_n_count
 # def stable_alignment(members_lst: [str]) -> bool:
 #     for member in members_lst:
+
+
+def avoid_others(idx, members_lst):
+    other_type = 'B' if members_lst[idx] == 'A' else 'A'
+    current_others = group_count(idx, other_type, members_lst)
+    # print(current_b)
+    # for e_idx in empty_idxs(members_lst):
+    #     # print(e_idx)
+    #     empty_others_count = other_neighbor_count(
+    #         e_idx, other_type, members_lst)
+    #     # print(empty_b_count)
+    #     if empty_others_count < current_others:
+    #         swap(e_idx, idx, members_lst)
+    #         current_others = empty_others_count
+    empty_others_counts = [(e_idx, dist_to_group(
+        e_idx, other_type, members_lst)) for e_idx in empty_idxs(members_lst)]
+    empty_others_counts = sorted(
+        empty_others_counts, key=lambda tup: tup[1])
+    print(members_lst[idx], empty_others_counts)
+    if empty_others_counts[0][1] < current_others:
+        swap(idx, empty_others_counts[0][0], members_lst)
+
+
+def increase_ingroup(idx, members_lst):
+    current_ingroup_count = group_count(idx, members_lst[idx], members_lst)
+    empty_ingroup_counts = [(e_idx, dist_to_group(
+        e_idx, members_lst[idx], members_lst)) for e_idx, val in enumerate(empty_idxs(members_lst))]
+    empty_ingroup_counts = sorted(
+        empty_ingroup_counts, key=lambda tup: tup[1], reverse=True)
+    if empty_ingroup_counts[0][1] < current_ingroup_count:
+        swap(idx, empty_ingroup_counts[0][0], members_lst)
 
 
 def move_all(members_lst):
     print(members_lst)
     past_lst = deepcopy(members_lst)
     for member_idx in range(len(members_lst)):
-        move(member_idx, members_lst)
-        print(members_lst)
-        past_lst = deepcopy(members_lst)
+        if past_lst[member_idx] != '_':
+            avoid_others(member_idx, members_lst)
+            print(members_lst)
+            past_lst = deepcopy(members_lst)
 
 
 def schelling(members_str):
@@ -294,8 +353,9 @@ def schelling(members_str):
             print("There may not be a stable arrangement")
             break
 
+
 if __name__ == "__main__":
-    schelling(['A', 'B', 'A', 'B', 'A', 'B', '', '', ''])
+    schelling(['A', 'B', 'A', 'B', 'A', 'B', '_', '_', '_'])
     # num_of_type_0 = 250
     # num_of_type_1 = 250
     # num_neighbors = 10      # Number of agents regarded as neighbors
