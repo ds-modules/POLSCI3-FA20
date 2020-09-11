@@ -17,3 +17,4 @@ For use in class: open this repository in UC Berkeley's DataHub.  Click on the f
 
 [Problem Set 1](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fds-modules%2FPOLSCI3-FA20&urlpath=tree%2FPOLSCI3-FA20%2FPS1%2FProblem+Set+1+-+Causal+Theories+and+Intro+to+Python.ipynb&branch=master)
 
+[Week 3 Lecture Notebook](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fds-modules%2FPOLSCI3-FA20&urlpath=tree%2FPOLSCI3-FA20%2FPS+3+2020+-+Discussion+Notebook+1%2C+Introduction+to+Python%2C+Expected+Utility.ipynb&branch=master)
