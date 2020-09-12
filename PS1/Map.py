@@ -9,6 +9,8 @@ class AgentType(Enum):
     A = 'A'
     B = 'B'
     EMPTY = '_'
+    def __str__(self):
+        return self.value
 
 
 class Agent:
